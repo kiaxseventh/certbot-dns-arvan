@@ -54,11 +54,21 @@ class _ArvanClient(object):
 
     def _find_domain(self, domain_name):
         try:
-            res = requests.get(self.api_url, headers=self._get_headers(), timeout=15)
-            if res.status_code != 200:
-                raise errors.PluginError(f"ArvanCloud API Error: {res.status_code}")
-            
-            domains_list = res.json().get('data', [])
+            page = 1
+            domains_list = []
+            while True:
+                res = requests.get(f"{self.api_url}?page={page}", headers=self._get_headers(), timeout=15)
+                if res.status_code != 200:
+                    raise errors.PluginError(f"ArvanCloud API Error: {res.status_code}")
+                
+                json_data = res.json()
+                domains_list.extend(json_data.get('data', []))
+                
+                meta = json_data.get('meta', {})
+                if meta.get('current_page', 1) >= meta.get('last_page', 1):
+                    break
+                page += 1
+                
             parts = domain_name.split('.')
             
             for i in range(len(parts) - 1):
