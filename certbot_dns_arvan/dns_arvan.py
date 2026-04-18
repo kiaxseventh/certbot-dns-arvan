@@ -79,7 +79,7 @@ class _ArvanClient(object):
             "name": relative_name,
             "cloud": False,
             "ttl": 120,
-            "value": [{"text": validation}]
+            "value": {"text": validation}
         }
         
         res = requests.post(f"{self.api_url}/{root_domain}/dns-records", headers=self._get_headers(), json=data)
