@@ -53,48 +53,33 @@ class _ArvanClient(object):
         }
 
     def _find_domain(self, domain_name):
-        try:
-            page = 1
-            domains_list = []
-            while True:
-                res = requests.get(f"{self.api_url}?page={page}", headers=self._get_headers(), timeout=15)
-                if res.status_code != 200:
-                    raise errors.PluginError(f"ArvanCloud API Error: {res.status_code}")
-                
-                json_data = res.json()
-                domains_list.extend(json_data.get('data', []))
-                
-                meta = json_data.get('meta', {})
-                if meta.get('current_page', 1) >= meta.get('last_page', 1):
-                    break
-                page += 1
-                
-            parts = domain_name.split('.')
-            
-            for i in range(len(parts) - 1):
-                candidate = ".".join(parts[i:])
-                for d in domains_list:
-                    if d['name'] == candidate:
-                        return candidate
-        except Exception as e:
-            raise errors.PluginError(f"Error finding domain: {e}")
-
+        parts = domain_name.split('.')
+        for i in range(len(parts) - 1):
+            candidate = ".".join(parts[i:])
+            res = requests.get(f"{self.api_url}/{candidate}", headers=self._get_headers(), timeout=15)
+            if res.status_code == 200:
+                return candidate
+        
         raise errors.PluginError(f"Domain {domain_name} not found in ArvanCloud account.")
 
     def add_txt_record(self, domain, validation_name, validation):
         root_domain = self._find_domain(domain)
+        
         if validation_name == root_domain:
-             relative_name = "@"
+            relative_name = "@"
         else:
-             suffix = "." + root_domain
-             if validation_name.endswith(suffix):
-                 relative_name = validation_name[:-len(suffix)]
-             else:
-                 relative_name = validation_name
+            suffix = "." + root_domain
+            if validation_name.endswith(suffix):
+                relative_name = validation_name[:-len(suffix)]
+            else:
+                relative_name = validation_name
 
         data = {
-            "type": "txt", "name": relative_name, "cloud": False, "ttl": 120,
-            "value": {"text": validation}
+            "type": "txt",
+            "name": relative_name,
+            "cloud": False,
+            "ttl": 120,
+            "value": [{"text": validation}]
         }
         
         res = requests.post(f"{self.api_url}/{root_domain}/dns-records", headers=self._get_headers(), json=data)
@@ -106,13 +91,13 @@ class _ArvanClient(object):
         try:
             root_domain = self._find_domain(domain)
             if validation_name == root_domain:
-                 relative_name = "@"
+                relative_name = "@"
             else:
-                 suffix = "." + root_domain
-                 if validation_name.endswith(suffix):
-                     relative_name = validation_name[:-len(suffix)]
-                 else:
-                     relative_name = validation_name
+                suffix = "." + root_domain
+                if validation_name.endswith(suffix):
+                    relative_name = validation_name[:-len(suffix)]
+                else:
+                    relative_name = validation_name
 
             res = requests.get(f"{self.api_url}/{root_domain}/dns-records", headers=self._get_headers(), params={"type": "txt", "search": relative_name})
             if res.status_code == 200:
