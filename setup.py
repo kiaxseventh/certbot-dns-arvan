@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='certbot-dns-arvan',
-    version='1.0.4',
+    version='1.0.5',
     description='ArvanCloud DNS Authenticator plugin for Certbot',
     url='https://github.com/kiaxseventh/certbot-dns-arvan',
     author='Kiax',
